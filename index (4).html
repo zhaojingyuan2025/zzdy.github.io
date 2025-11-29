@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自助打印小程序</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 统一的 Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6', // 主蓝色
+            secondary: '#10B981', // 辅助绿色
+            accent: '#F97316', // 强调橙色
+            light: '#F3F4F6', // 浅色背景
+            dark: '#1F2937', // 深色文本
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .transition-all-300 {
+        transition: all 300ms ease-in-out;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+  <!-- 页面容器 -->
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+      <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fa fa-print text-primary text-2xl mr-2"></i>
+          <h1 class="text-xl font-bold text-dark">自助打印</h1>
+        </div>
+        <div class="flex items-center">
+          <button id="userBtn" class="p-2 rounded-full hover:bg-gray-100">
+            <i class="fa fa-user-circle-o text-gray-600 text-xl"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="flex-grow container mx-auto px-4 py-6">
+      <!-- 页面内容 - 根据当前页面动态切换 -->
+      <div id="pageContent">
+        <!-- 首页 -->
+        <div id="homePage" class="page active">
+          <!-- 欢迎横幅 -->
+          <div class="relative rounded-xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-primary to-blue-700 text-white p-6 rounded-xl">
+              <h2 class="text-2xl font-bold mb-2">欢迎使用自助打印</h2>
+              <p class="mb-4">便捷高效的打印服务，随时随地满足您的打印需求</p>
+              <button class="bg-white text-primary px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all-300 flex items-center">
+                <i class="fa fa-upload mr-2"></i> 立即上传文件
+              </button>
+            </div>
+            <div class="absolute right-0 bottom-0 opacity-20">
+              <i class="fa fa-print text-9xl transform rotate-12"></i>
+            </div>
+          </div>
+
+          <!-- 功能导航卡片 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- 上传文件 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center hover:shadow-md transition-all-300 cursor-pointer" onclick="navigateTo('uploadPage')">
+              <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-cloud-upload text-primary text-2xl"></i>
+              </div>
+              <h3 class="font-semibold text-lg mb-2">上传文件</h3>
+              <p class="text-gray-500 text-sm">支持PDF、Word、图片等多种格式</p>
+            </div>
+            
+            <!-- 打印设置 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center hover:shadow-md transition-all-300 cursor-pointer" onclick="navigateTo('settingsPage')">
+              <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-cog text-secondary text-2xl"></i>
+              </div>
+              <h3 class="font-semibold text-lg mb-2">打印设置</h3>
+              <p class="text-gray-500 text-sm">自定义纸张、颜色、份数等参数</p>
+            </div>
+            
+            <!-- 附近打印机 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center hover:shadow-md transition-all-300 cursor-pointer" onclick="navigateTo('printersPage')">
+              <div class="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-map-marker text-accent text-2xl"></i>
+              </div>
+              <h3 class="font-semibold text-lg mb-2">附近打印机</h3>
+              <p class="text-gray-500 text-sm">查找离您最近的可用打印机</p>
+            </div>
+            
+            <!-- 我的订单 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center hover:shadow-md transition-all-300 cursor-pointer" onclick="navigateTo('ordersPage')">
+              <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-file-text-o text-purple-600 text-2xl"></i>
+              </div>
+              <h3 class="font-semibold text-lg mb-2">我的订单</h3>
+              <p class="text-gray-500 text-sm">查看历史订单和当前打印任务</p>
+            </div>
+          </div>
+
+          <!-- 最近打印记录 -->
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-lg">最近打印记录</h3>
+              <a href="#" class="text-primary text-sm flex items-center">
+                查看全部 <i class="fa fa-angle-right ml-1"></i>
+              </a>
+            </div>
+            
+            <div class="space-y-4">
+              <!-- 记录项 1 -->
+              <div class="border-b border-gray-100 pb-4">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <h4 class="font-medium">报告.pdf</h4>
+                    <p class="text-sm text-gray-500">A4, 黑白, 5份</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium text-primary">¥5.00</p>
+                    <p class="text-xs text-gray-400">2023-06-15 14:30</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 记录项 2 -->
+              <div class="border-b border-gray-100 pb-4">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <h4 class="font-medium">照片.jpg</h4>
+                    <p class="text-sm text-gray-500">A5, 彩色, 2份</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium text-primary">¥6.00</p>
+                    <p class="text-xs text-gray-400">2023-06-10 09:15</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 记录项 3 -->
+              <div>
+                <div class="flex justify-between items-start">
+                  <div>
+                    <h4 class="font-medium">简历.docx</h4>
+                    <p class="text-sm text-gray-500">A4, 黑白, 3份</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium text-primary">¥3.00</p>
+                    <p class="text-xs text-gray-400">2023-06-05 16:45</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 文件上传页面 -->
+        <div id="uploadPage" class="page hidden">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold mb-2">上传文件</h2>
+            <p class="text-gray-500">支持 PDF、Word、Excel、图片等格式</p>
+          </div>
+
+          <!-- 上传区域 -->
+          <div id="uploadArea" class="bg-white rounded-xl shadow-sm p-8 mb-8 border-2 border-dashed border-gray-200 hover:border-primary transition-all-300 cursor-pointer text-center">
+            <div class="mb-4">
+              <i class="fa fa-cloud-upload text-5xl text-gray-300"></i>
+            </div>
+            <h3 class="text-lg font-medium mb-2">点击或拖拽文件到此处</h3>
+            <p class="text-sm text-gray-500 mb-4">单个文件最大 10MB</p>
+            <button id="browseFiles" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all-300">
+              选择文件
+            </button>
+            <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+          </div>
+
+          <!-- 已上传文件列表 -->
+          <div id="fileList" class="bg-white rounded-xl shadow-sm p-6 mb-8 hidden">
+            <h3 class="font-semibold text-lg mb-4">已上传文件</h3>
+            
+            <div class="space-y-4">
+              <!-- 文件项会通过 JavaScript 动态添加 -->
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="flex justify-between">
+            <button onclick="navigateTo('homePage')" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all-300">
+              返回
+            </button>
+            <button id="nextToSettings" onclick="navigateTo('settingsPage')" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all-300 hidden">
+              下一步：打印设置
+            </button>
+          </div>
+        </div>
+
+        <!-- 打印设置页面 -->
+        <div id="settingsPage" class="page hidden">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold mb-2">打印设置</h2>
+            <p class="text-gray-500">自定义您的打印参数</p>
+          </div>
+
+          <!-- 当前文件信息 -->
+          <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <div class="flex items-center">
+              <div class="bg-red-100 p-3 rounded-lg mr-4">
+                <i class="fa fa-file-pdf-o text-red-500 text-xl"></i>
+              </div>
+              <div class="flex-grow">
+                <h3 class="font-medium">报告.pdf</h3>
+                <p class="text-sm text-gray-500">2页 · 1.2MB</p>
+              </div>
+              <button class="text-gray-400 hover:text-gray-600">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 设置选项 -->
+          <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <!-- 纸张大小 -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">纸张大小</label>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="paperSize" id="a4" class="hidden" checked>
+                  <label for="a4" class="cursor-pointer">
+                    <div class="font-medium mb-1">A4</div>
+                    <div class="text-xs text-gray-500">210 × 297mm</div>
+                  </label>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="paperSize" id="a5" class="hidden">
+                  <label for="a5" class="cursor-pointer">
+                    <div class="font-medium mb-1">A5</div>
+                    <div class="text-xs text-gray-500">148 × 210mm</div>
+                  </label>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="paperSize" id="b5" class="hidden">
+                  <label for="b5" class="cursor-pointer">
+                    <div class="font-medium mb-1">B5</div>
+                    <div class="text-xs text-gray-500">176 × 250mm</div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 颜色选项 -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">颜色选项</label>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="color" id="blackWhite" class="hidden" checked>
+                  <label for="blackWhite" class="cursor-pointer">
+                    <div class="font-medium mb-1">黑白</div>
+                    <div class="text-xs text-gray-500">¥1.00/页</div>
+                  </label>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="color" id="color" class="hidden">
+                  <label for="color" class="cursor-pointer">
+                    <div class="font-medium mb-1">彩色</div>
+                    <div class="text-xs text-gray-500">¥3.00/页</div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 打印份数 -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">打印份数</label>
+              <div class="flex items-center">
+                <button id="decreaseCopies" class="w-10 h-10 border border-gray-200 rounded-l-lg flex items-center justify-center text-gray-600 hover:bg-gray-50">
+                  <i class="fa fa-minus"></i>
+                </button>
+                <input type="number" id="copies" class="w-20 h-10 border-t border-b border-gray-200 text-center focus:outline-none" value="1" min="1" max="99">
+                <button id="increaseCopies" class="w-10 h-10 border border-gray-200 rounded-r-lg flex items-center justify-center text-gray-600 hover:bg-gray-50">
+                  <i class="fa fa-plus"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 双面打印 -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">双面打印</label>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="duplex" id="single" class="hidden" checked>
+                  <label for="single" class="cursor-pointer">
+                    <div class="font-medium mb-1">单面</div>
+                    <div class="text-xs text-gray-500">默认</div>
+                  </label>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="duplex" id="duplexLong" class="hidden">
+                  <label for="duplexLong" class="cursor-pointer">
+                    <div class="font-medium mb-1">双面(长边)</div>
+                    <div class="text-xs text-gray-500">节省纸张</div>
+                  </label>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="duplex" id="duplexShort" class="hidden">
+                  <label for="duplexShort" class="cursor-pointer">
+                    <div class="font-medium mb-1">双面(短边)</div>
+                    <div class="text-xs text-gray-500">特殊需求</div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 打印方向 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">打印方向</label>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="orientation" id="portrait" class="hidden" checked>
+                  <label for="portrait" class="cursor-pointer">
+                    <div class="font-medium mb-1">纵向</div>
+                    <div class="text-xs text-gray-500">默认</div>
+                  </label>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300">
+                  <input type="radio" name="orientation" id="landscape" class="hidden">
+                  <label for="landscape" class="cursor-pointer">
+                    <div class="font-medium mb-1">横向</div>
+                    <div class="text-xs text-gray-500">宽幅内容</div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 价格预览 -->
+          <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <h3 class="font-semibold text-lg mb-4">订单预览</h3>
+            
+            <div class="space-y-3 mb-6">
+              <div class="flex justify-between">
+                <span class="text-gray-600">纸张大小</span>
+                <span>A4</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">颜色</span>
+                <span>黑白</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">打印份数</span>
+                <span>1份 × 2页</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">双面打印</span>
+                <span>否</span>
+              </div>
+              <div class="border-t border-gray-100 pt-3 flex justify-between font-medium">
+                <span>总计</span>
+                <span class="text-primary">¥2.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="flex justify-between">
+            <button onclick="navigateTo('uploadPage')" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all-300">
+              返回
+            </button>
+            <button onclick="navigateTo('printersPage')" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all-300">
+              下一步：选择打印机
+            </button>
+          </div>
+        </div>
+
+        <!-- 打印机选择页面 -->
+        <div id="printersPage" class="page hidden">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold mb-2">附近打印机</h2>
+            <p class="text-gray-500">选择离您最近的可用打印机</p>
+          </div>
+
+          <!-- 地图区域 -->
+          <div class="bg-white rounded-xl shadow-sm p-4 mb-8 overflow-hidden">
+            <div class="relative h-80 bg-gray-100 rounded-lg">
+              <!-- 模拟地图 -->
+              <img src="https://p26-doubao-search-sign.byteimg.com/labis/image/bbd31796a06a99a7c3ff6601770d8693~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779934414&x-signature=uFk%2BRRGCPLxUrLHs9pRdIW3IpIw%3D" alt="地图" class="w-full h-full object-cover opacity-50">
+              
+              <!-- 打印机标记 -->
+              <div class="absolute top-1/4 left-1/3 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer printer-marker" data-id="1">
+                <div class="relative">
+                  <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs animate-pulse">
+                    <i class="fa fa-print"></i>
+                  </div>
+                  <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-green-500"></div>
+                </div>
+              </div>
+              
+              <div class="absolute top-1/3 right-1/4 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer printer-marker" data-id="2">
+                <div class="relative">
+                  <div class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs">
+                    <i class="fa fa-print"></i>
+                  </div>
+                  <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-yellow-500"></div>
+                </div>
+              </div>
+              
+              <div class="absolute bottom-1/4 right-1/3 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer printer-marker" data-id="3">
+                <div class="relative">
+                  <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">
+                    <i class="fa fa-print"></i>
+                  </div>
+                  <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-red-500"></div>
+                </div>
+              </div>
+              
+              <!-- 用户位置 -->
+              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div class="relative">
+                  <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                  <div class="absolute -inset-1 bg-blue-400 rounded-full animate-ping opacity-75"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 打印机列表 -->
+          <div class="space-y-4 mb-8">
+            <!-- 打印机 1 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500 hover:shadow-md transition-all-300 cursor-pointer printer-item" data-id="1">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="flex items-center mb-2">
+                    <h3 class="font-medium mr-2">图书馆自助打印机</h3>
+                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">空闲</span>
+                  </div>
+                  <p class="text-sm text-gray-500 mb-2">图书馆一楼大厅，靠近入口处</p>
+                  <div class="flex items-center text-sm text-gray-500">
+                    <i class="fa fa-map-marker mr-1"></i>
+                    <span>距离 200 米</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="flex items-center justify-end mb-2">
+                    <i class="fa fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-sm">支持双面打印</span>
+                  </div>
+                  <div class="flex items-center justify-end">
+                    <i class="fa fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-sm">支持彩色打印</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 打印机 2 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-yellow-500 hover:shadow-md transition-all-300 cursor-pointer printer-item" data-id="2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="flex items-center mb-2">
+                    <h3 class="font-medium mr-2">教学楼A区打印机</h3>
+                    <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">忙碌</span>
+                  </div>
+                  <p class="text-sm text-gray-500 mb-2">教学楼A区一楼，自助服务区</p>
+                  <div class="flex items-center text-sm text-gray-500">
+                    <i class="fa fa-map-marker mr-1"></i>
+                    <span>距离 500 米</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="flex items-center justify-end mb-2">
+                    <i class="fa fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-sm">支持双面打印</span>
+                  </div>
+                  <div class="flex items-center justify-end">
+                    <i class="fa fa-times-circle text-red-500 mr-1"></i>
+                    <span class="text-sm">不支持彩色打印</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 打印机 3 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500 hover:shadow-md transition-all-300 cursor-pointer printer-item" data-id="3">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="flex items-center mb-2">
+                    <h3 class="font-medium mr-2">行政楼B区打印机</h3>
+                    <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">故障</span>
+                  </div>
+                  <p class="text-sm text-gray-500 mb-2">行政楼B区二楼，服务大厅</p>
+                  <div class="flex items-center text-sm text-gray-500">
+                    <i class="fa fa-map-marker mr-1"></i>
+                    <span>距离 800 米</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="flex items-center justify-end mb-2">
+                    <i class="fa fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-sm">支持双面打印</span>
+                  </div>
+                  <div class="flex items-center justify-end">
+                    <i class="fa fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-sm">支持彩色打印</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="flex justify-between">
+            <button onclick="navigateTo('settingsPage')" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all-300">
+              返回
+            </button>
+            <button id="nextToPayment" onclick="navigateTo('paymentPage')" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all-300 disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+              下一步：确认支付
+            </button>
+          </div>
+        </div>
+
+        <!-- 支付页面 -->
+        <div id="paymentPage" class="page hidden">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold mb-2">确认支付</h2>
+            <p class="text-gray-500">完成支付后，您的打印任务将被提交</p>
+          </div>
+
+          <!-- 订单信息 -->
+          <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <h3 class="font-semibold text-lg mb-4">订单信息</h3>
+            
+            <div class="space-y-3 mb-6">
+              <div class="flex justify-between">
+                <span class="text-gray-600">打印机</span>
+                <span>图书馆自助打印机</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">文件</span>
+                <span>报告.pdf (2页)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">打印设置</span>
+                <span>A4, 黑白, 1份</span>
+              </div>
+              <div class="border-t border-gray-100 pt-3 flex justify-between font-medium">
+                <span>应付金额</span>
+                <span class="text-primary text-xl">¥2.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 支付方式 -->
+          <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <h3 class="font-semibold text-lg mb-4">选择支付方式</h3>
+            
+            <div class="space-y-4">
+              <!-- 微信支付 -->
+              <div class="border border-gray-200 rounded-lg p-4 flex items-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300 payment-method" data-method="wechat">
+                <input type="radio" name="paymentMethod" id="wechatPay" class="hidden" checked>
+                <label for="wechatPay" class="flex items-center w-full cursor-pointer">
+                  <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                    <img src="https://p3-doubao-search-sign.byteimg.com/labis/cbeea5f0057d6dab379cf37e722f6b45~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779934414&x-signature=%2FxDBbXg88mbifvy0AY%2FfNPGsB8c%3D" alt="微信支付" class="w-6 h-6 object-contain">
+                  </div>
+                  <div class="flex-grow">
+                    <div class="font-medium">微信支付</div>
+                    <div class="text-xs text-gray-500">使用微信扫码支付</div>
+                  </div>
+                  <div class="w-6 h-6 border border-gray-300 rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 rounded-full bg-primary hidden"></div>
+                  </div>
+                </label>
+              </div>
+              
+              <!-- 支付宝 -->
+              <div class="border border-gray-200 rounded-lg p-4 flex items-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300 payment-method" data-method="alipay">
+                <input type="radio" name="paymentMethod" id="alipay" class="hidden">
+                <label for="alipay" class="flex items-center w-full cursor-pointer">
+                  <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                    <img src="https://p3-doubao-search-sign.byteimg.com/labis/8de878c653f440b68753a967e3377441~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779934414&x-signature=vOWug%2ByX%2B6GAXtvGt8VzEckGasA%3D" alt="支付宝" class="w-6 h-6 object-contain">
+                  </div>
+                  <div class="flex-grow">
+                    <div class="font-medium">支付宝</div>
+                    <div class="text-xs text-gray-500">使用支付宝扫码支付</div>
+                  </div>
+                  <div class="w-6 h-6 border border-gray-300 rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 rounded-full bg-primary hidden"></div>
+                  </div>
+                </label>
+              </div>
+              
+              <!-- 余额支付 -->
+              <div class="border border-gray-200 rounded-lg p-4 flex items-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all-300 payment-method" data-method="balance">
+                <input type="radio" name="paymentMethod" id="balancePay" class="hidden">
+                <label for="balancePay" class="flex items-center w-full cursor-pointer">
+                  <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-4">
+                    <i class="fa fa-wallet text-purple-600"></i>
+                  </div>
+                  <div class="flex-grow">
+                    <div class="font-medium">余额支付</div>
+                    <div class="text-xs text-gray-500">当前余额：¥10.00</div>
+                  </div>
+                  <div class="w-6 h-6 border border-gray-300 rounded-full flex items-center justify-center">
+                    <div class="w-3 h-3 rounded-full bg-primary hidden"></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 支付提示 -->
+          <div class="bg-blue-50 rounded-xl p-4 mb-8 text-sm text-blue-700">
+            <i class="fa fa-info-circle mr-2"></i>
+            支付完成后，您的打印任务将自动提交到所选打印机，您可以在"我的订单"中查看打印状态。
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="flex justify-between">
+            <button onclick="navigateTo('printersPage')" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all-300">
+              返回
+            </button>
+            <button id="confirmPayment" onclick="showPaymentSuccess()" class="bg-accent text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition-all-300">
+              确认支付
+            </button>
+          </div>
+        </div>
+
+        <!-- 支付成功页面 -->
+        <div id="successPage" class="page hidden">
+          <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <i class="fa fa-check text-green-500 text-4xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">支付成功</h2>
+            <p class="text-gray-500 mb-6">您的打印任务已提交，请前往所选打印机取件</p>
+            
+            <div class="bg-gray-50 rounded-lg p-4 mb-8 text-left">
+              <div class="flex justify-between mb-2">
+                <span class="text-gray-600">订单编号</span>
+                <span>PR20230615001</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">打印机</span>
+                <span>图书馆自助打印机</span>
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+              <button onclick="navigateTo('homePage')" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all-300">
+                返回首页
+              </button>
+              <button onclick="navigateTo('ordersPage')" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-all-300">
+                查看订单
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 我的订单页面 -->
+        <div id="ordersPage" class="page hidden">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold mb-2">我的订单</h2>
+            <p class="text-gray-500">查看您的打印历史和当前任务</p>
+          </div>
+
+          <!-- 订单状态标签 -->
+          <div class="flex border-b border-gray-200 mb-6">
+            <button class="px-4 py-2 font-medium text-primary border-b-2 border-primary">
+              全部
+            </button>
+            <button class="px-4 py-2 font-medium text-gray-500 hover:text-gray-700">
+              待打印
+            </button>
+            <button class="px-4 py-2 font-medium text-gray-500 hover:text-gray-700">
+              打印中
+            </button>
+            <button class="px-4 py-2 font-medium text-gray-500 hover:text-gray-700">
+              已完成
+            </button>
+            <button class="px-4 py-2 font-medium text-gray-500 hover:text-gray-700">
+              已取消
+            </button>
+          </div>
+
+          <!-- 订单列表 -->
+          <div class="space-y-6">
+            <!-- 当前任务 -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-blue-50 px-6 py-3 flex justify-between items-center">
+                <div class="flex items-center">
+                  <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-3">打印中</span>
+                  <span class="text-sm text-gray-600">当前任务</span>
+                </div>
+                <span class="text-sm text-gray-500">10分钟前</span>
+              </div>
+              
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 class="font-medium mb-1">报告.pdf</h3>
+                    <p class="text-sm text-gray-500">A4, 黑白, 1份, 2页</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium text-primary">¥2.00</p>
+                    <p class="text-xs text-gray-400">订单号: PR20230615001</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <i class="fa fa-map-marker text-gray-400 mr-2"></i>
+                    <span class="text-sm">图书馆自助打印机</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden mr-3">
+                      <div class="h-full bg-primary" style="width: 60%"></div>
+                    </div>
+                    <span class="text-sm text-gray-600">60%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 历史订单 1 -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-green-50 px-6 py-3 flex justify-between items-center">
+                <div class="flex items-center">
+                  <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mr-3">已完成</span>
+                  <span class="text-sm text-gray-600">历史订单</span>
+                </div>
+                <span class="text-sm text-gray-500">2天前</span>
+              </div>
+              
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 class="font-medium mb-1">照片.jpg</h3>
+                    <p class="text-sm text-gray-500">A5, 彩色, 2份, 2页</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium text-primary">¥6.00</p>
+                    <p class="text-xs text-gray-400">订单号: PR20230613002</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <i class="fa fa-map-marker text-gray-400 mr-2"></i>
+                    <span class="text-sm">教学楼A区打印机</span>
+                  </div>
+                  <button class="text-primary text-sm flex items-center">
+                    查看详情 <i class="fa fa-angle-right ml-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 历史订单 2 -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div class="bg-green-50 px-6 py-3 flex justify-between items-center">
+                <div class="flex items-center">
+                  <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mr-3">已完成</span>
+                  <span class="text-sm text-gray-600">历史订单</span>
+                </div>
+                <span class="text-sm text-gray-500">1周前</span>
+              </div>
+              
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 class="font-medium mb-1">简历.docx</h3>
+                    <p class="text-sm text-gray-500">A4, 黑白, 3份, 3页</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium text-primary">¥3.00</p>
+                    <p class="text-xs text-gray-400">订单号: PR20230608003</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <i class="fa fa-map-marker text-gray-400 mr-2"></i>
+                    <span class="text-sm">图书馆自助打印机</span>
+                  </div>
+                  <button class="text-primary text-sm flex items-center">
+                    查看详情 <i class="fa fa-angle-right ml-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 底部导航栏 -->
+    <footer class="bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] sticky bottom-0 z-40">
+      <div class="container mx-auto px-4">
+        <div class="flex justify-around">
+          <button class="nav-btn flex flex-col items-center py-3 px-6 text-primary" data-page="homePage">
+            <i class="fa fa-home text-xl mb-1"></i>
+            <span class="text-xs">首页</span>
+          </button>
+          <button class="nav-btn flex flex-col items-center py-3 px-6 text-gray-500" data-page="uploadPage">
+            <i class="fa fa-upload text-xl mb-1"></i>
+            <span class="text-xs">上传</span>
+          </button>
+          <button class="nav-btn flex flex-col items-center py-3 px-6 text-gray-500" data-page="printersPage">
+            <i class="fa fa-map-marker text-xl mb-1"></i>
+            <span class="text-xs">打印机</span>
+          </button>
+          <button class="nav-btn flex flex-col items-center py-3 px-6 text-gray-500" data-page="ordersPage">
+            <i class="fa fa-file-text-o text-xl mb-1"></i>
+            <span class="text-xs">我的</span>
+          </button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // 页面导航
+    function navigateTo(pageId) {
+      // 隐藏所有页面
+      document.querySelectorAll('.page').forEach(page => {
+        page.classList.add('hidden');
+        page.classList.remove('active');
+      });
+      
+      // 显示目标页面
+      const targetPage = document.getElementById(pageId);
+      if (targetPage) {
+        targetPage.classList.remove('hidden');
+        targetPage.classList.add('active');
+        
+        // 更新底部导航栏状态
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+          if (btn.dataset.page === pageId) {
+            btn.classList.add('text-primary');
+            btn.classList.remove('text-gray-500');
+          } else {
+            btn.classList.remove('text-primary');
+            btn.classList.add('text-gray-500');
+          }
+        });
+        
+        // 滚动到顶部
+        window.scrollTo(0, 0);
+      }
+    }
+
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function() {
+      // 底部导航点击事件
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          navigateTo(this.dataset.page);
+        });
+      });
+
+      // 文件上传区域点击事件
+      const uploadArea = document.getElementById('uploadArea');
+      const fileInput = document.getElementById('fileInput');
+      const browseFilesBtn = document.getElementById('browseFiles');
+      
+      if (uploadArea && fileInput && browseFilesBtn) {
+        uploadArea.addEventListener('click', function() {
+          fileInput.click();
+        });
+        
+        browseFilesBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          fileInput.click();
+        });
+        
+        // 文件选择事件
+        fileInput.addEventListener('change', function(e) {
+          handleFiles(e.target.files);
+        });
+        
+        // 拖拽上传
+        uploadArea.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          uploadArea.classList.add('border-primary');
+        });
+        
+        uploadArea.addEventListener('dragleave', function() {
+          uploadArea.classList.remove('border-primary');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+          e.preventDefault();
+          uploadArea.classList.remove('border-primary');
+          
+          if (e.dataTransfer.files.length > 0) {
+            handleFiles(e.dataTransfer.files);
+          }
+        });
+      }
+
+      // 打印份数调整
+      const decreaseCopiesBtn = document.getElementById('decreaseCopies');
+      const increaseCopiesBtn = document.getElementById('increaseCopies');
+      const copiesInput = document.getElementById('copies');
+      
+      if (decreaseCopiesBtn && increaseCopiesBtn && copiesInput) {
+        decreaseCopiesBtn.addEventListener('click', function() {
+          const currentValue = parseInt(copiesInput.value);
+          if (currentValue > 1) {
+            copiesInput.value = currentValue - 1;
+          }
+        });
+        
+        increaseCopiesBtn.addEventListener('click', function() {
+          const currentValue = parseInt(copiesInput.value);
+          if (currentValue < 99) {
+            copiesInput.value = currentValue + 1;
+          }
+        });
+        
+        copiesInput.addEventListener('change', function() {
+          let value = parseInt(this.value);
+          if (isNaN(value) || value < 1) {
+            this.value = 1;
+          } else if (value > 99) {
+            this.value = 99;
+          }
+        });
+      }
+
+      // 打印机选择
+      const printerItems = document.querySelectorAll('.printer-item');
+      const printerMarkers = document.querySelectorAll('.printer-marker');
+      const nextToPaymentBtn = document.getElementById('nextToPayment');
+      
+      if (printerItems.length > 0 && nextToPaymentBtn) {
+        printerItems.forEach(item => {
+          item.addEventListener('click', function() {
+            // 移除其他打印机的选中状态
+            printerItems.forEach(i => i.classList.remove('ring-2', 'ring-primary'));
+            
+            // 添加当前打印机的选中状态
+            this.classList.add('ring-2', 'ring-primary');
+            
+            // 启用下一步按钮
+            nextToPaymentBtn.disabled = false;
+          });
+        });
+        
+        // 地图标记点击事件
+        if (printerMarkers.length > 0) {
+          printerMarkers.forEach(marker => {
+            marker.addEventListener('click', function() {
+              const printerId = this.dataset.id;
+              
+              // 找到对应的打印机项并触发点击
+              const correspondingPrinter = document.querySelector(`.printer-item[data-id="${printerId}"]`);
+              if (correspondingPrinter) {
+                correspondingPrinter.click();
+                
+                // 滚动到打印机列表
+                correspondingPrinter.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            });
+          });
+        }
+      }
+
+      // 支付方式选择
+      const paymentMethods = document.querySelectorAll('.payment-method');
+      
+      if (paymentMethods.length > 0) {
+        paymentMethods.forEach(method => {
+          method.addEventListener('click', function() {
+            // 移除其他支付方式的选中状态
+            paymentMethods.forEach(m => {
+              m.querySelector('input').checked = false;
+              m.querySelector('.w-3').classList.add('hidden');
+            });
+            
+            // 添加当前支付方式的选中状态
+            const radio = this.querySelector('input');
+            radio.checked = true;
+            this.querySelector('.w-3').classList.remove('hidden');
+          });
+        });
+        
+        // 默认选中第一个支付方式
+        const firstMethod = paymentMethods[0];
+        if (firstMethod) {
+          firstMethod.querySelector('.w-3').classList.remove('hidden');
+        }
+      }
+    });
+
+    // 处理上传的文件
+    function handleFiles(files) {
+      const fileList = document.getElementById('fileList');
+      const fileListContainer = fileList.querySelector('.space-y-4');
+      const nextToSettingsBtn = document.getElementById('nextToSettings');
+      
+      if (!fileList || !fileListContainer || !nextToSettingsBtn) return;
+      
+      // 显示文件列表
+      fileList.classList.remove('hidden');
+      
+      // 清空现有列表
+      fileListContainer.innerHTML = '';
+      
+      // 添加新文件
+      Array.from(files).forEach(file => {
+        const fileSize = formatFileSize(file.size);
+        const fileType = getFileType(file.name);
+        const fileIcon = getFileIcon(fileType);
+        
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between p-3 border border-gray-100 rounded-lg';
+        fileItem.innerHTML = `
+          <div class="flex items-center">
+            <div class="mr-3 ${fileIcon.bgColor} p-2 rounded">
+              <i class="fa ${fileIcon.icon} ${fileIcon.textColor}"></i>
+            </div>
+            <div>
+              <h4 class="font-medium text-sm">${file.name}</h4>
+              <p class="text-xs text-gray-500">${fileSize}</p>
+            </div>
+          </div>
+          <button class="text-gray-400 hover:text-red-500">
+            <i class="fa fa-times"></i>
+          </button>
+        `;
+        
+        fileListContainer.appendChild(fileItem);
+      });
+      
+      // 显示下一步按钮
+      nextToSettingsBtn.classList.remove('hidden');
+      
+      // 添加删除文件事件
+      const deleteButtons = fileListContainer.querySelectorAll('button');
+      deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const fileItem = this.closest('.flex.items-center.justify-between');
+          fileItem.remove();
+          
+          // 如果没有文件了，隐藏文件列表和下一步按钮
+          if (fileListContainer.children.length === 0) {
+            fileList.classList.add('hidden');
+            nextToSettingsBtn.classList.add('hidden');
+          }
+        });
+      });
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      else return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // 获取文件类型
+    function getFileType(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      
+      switch (ext) {
+        case 'pdf': return 'pdf';
+        case 'doc':
+        case 'docx': return 'word';
+        case 'xls':
+        case 'xlsx': return 'excel';
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif': return 'image';
+        default: return 'other';
+      }
+    }
+
+    // 获取文件图标
+    function getFileIcon(fileType) {
+      switch (fileType) {
+        case 'pdf':
+          return { icon: 'fa-file-pdf-o', bgColor: 'bg-red-100', textColor: 'text-red-500' };
+        case 'word':
+          return { icon: 'fa-file-word-o', bgColor: 'bg-blue-100', textColor: 'text-blue-500' };
+        case 'excel':
+          return { icon: 'fa-file-excel-o', bgColor: 'bg-green-100', textColor: 'text-green-500' };
+        case 'image':
+          return { icon: 'fa-file-image-o', bgColor: 'bg-purple-100', textColor: 'text-purple-500' };
+        default:
+          return { icon: 'fa-file-o', bgColor: 'bg-gray-100', textColor: 'text-gray-500' };
+      }
+    }
+
+    // 显示支付成功页面
+    function showPaymentSuccess() {
+      navigateTo('successPage');
+    }
+  </script>
+</body>
+</html>
